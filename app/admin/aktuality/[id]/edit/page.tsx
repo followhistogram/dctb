@@ -1,3 +1,5 @@
+// ./app/admin/aktuality/[id]/edit/page.tsx
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -35,6 +37,17 @@ interface NewsArticle {
   updated_at: string
 }
 
+function isNewsArticle(obj: any): obj is NewsArticle {
+  if (!obj) return false
+  return (
+    typeof obj.id === "string" &&
+    typeof obj.title === "string" &&
+    typeof obj.slug === "string" &&
+    typeof obj.content === "string" &&
+    Array.isArray(obj.tags)
+  )
+}
+
 export default function EditArticlePage({ params }: { params: { id: string } }) {
   const [article, setArticle] = useState<NewsArticle | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,25 +56,31 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
   const [contentHtml, setContentHtml] = useState<string>("")
 
   useEffect(() => {
-    loadArticle()
+    fetchArticleData()
   }, [params.id])
 
-  const loadArticle = async () => {
-    try {
-      const { data, error } = await supabase.from("news_articles").select("*").eq("id", params.id).single()
+  const fetchArticleData = async () => {
+    setError(null)
+    setLoading(true)
 
-      if (error || !data) {
+    try {
+      const { data, error: dbError } = await supabase.from("news_articles").select("*").eq("id", params.id).single()
+
+      if (dbError || !data) {
         notFound()
         return
       }
 
-      // Type assertion to ensure data matches our interface
-      const articleData = data as NewsArticle
-      setArticle(articleData)
-      setContentHtml(articleData.content)
-    } catch (error) {
-      console.error("Error loading article:", error)
-      notFound()
+      if (isNewsArticle(data)) {
+        setArticle(data)
+        setContentHtml(data.content)
+      } else {
+        console.error("Načtená data neodpovídají struktuře NewsArticle:", data)
+        setError("Data článku se nepodařilo správně načíst. Mají nesprávný formát.")
+      }
+    } catch (err) {
+      console.error("Error loading article:", err)
+      setError("Došlo k neočekávané chybě při načítání článku.")
     } finally {
       setLoading(false)
     }
@@ -75,6 +94,7 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
       await updateNewsArticle(params.id, formData)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Došlo k chybě při aktualizaci článku")
+    } finally {
       setSaving(false)
     }
   }
@@ -95,8 +115,18 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
     )
   }
 
+  if (error && !article) {
+    return (
+      <Alert className="border-red-200 bg-red-50">
+        <AlertCircle className="h-4 w-4 text-red-600" />
+        <AlertDescription className="text-red-700">{error}</AlertDescription>
+      </Alert>
+    )
+  }
+
   if (!article) {
     notFound()
+    return null // Přidáno pro jistotu, aby se zamezilo chybám, pokud notFound nefunguje jak má
   }
 
   return (
@@ -255,7 +285,7 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
                   <Input
                     id="tags"
                     name="tags"
-                    defaultValue={article.tags.join(", ")}
+                    defaultValue={Array.isArray(article.tags) ? article.tags.join(", ") : ""}
                     placeholder="štítek1, štítek2, štítek3"
                   />
                   <p className="text-xs text-gray-500">Oddělte štítky čárkami</p>
