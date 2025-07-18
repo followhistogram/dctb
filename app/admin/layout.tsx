@@ -35,7 +35,7 @@ interface NavigationItem {
 }
 
 const navigation: NavigationItem[] = [
-  { name: "Přehled", href: "/admin", icon: BarChart3 },
+  { name: "Přehled", href: "/admin/dashboard", icon: BarChart3 },
   {
     name: "Obsah",
     icon: Folder,
@@ -54,12 +54,17 @@ const navigation: NavigationItem[] = [
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const pathname = usePathname()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>(["Obsah"])
-  const router = useRouter()
-  const pathname = usePathname()
+
+  // Pokud jsme na login stránce (/admin), nezobrazujeme layout
+  if (pathname === "/admin") {
+    return <>{children}</>
+  }
 
   useEffect(() => {
     const getUser = async () => {
@@ -70,7 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setLoading(false)
 
       if (!user) {
-        router.push("/admin/login")
+        router.push("/admin")
       }
     }
 
@@ -80,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
-        router.push("/admin/login")
+        router.push("/admin")
       } else {
         setUser(session.user)
       }
@@ -91,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push("/admin/login")
+    router.push("/admin")
   }
 
   const toggleExpanded = (itemName: string) => {
@@ -101,8 +106,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const isActive = (href: string) => {
-    if (href === "/admin") {
-      return pathname === "/admin"
+    if (href === "/admin/dashboard") {
+      return pathname === "/admin/dashboard"
     }
     return pathname.startsWith(href)
   }

@@ -1,7 +1,6 @@
 "use client"
 
-import { useFormState } from "react-dom"
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,19 +25,27 @@ type Project = {
   type: string
 }
 
-const initialState = {
-  message: "",
-  errors: {},
+interface FormState {
+  message: string
+  errors: Record<string, string>
 }
 
 export function ProjectForm({ project }: { project?: Project }) {
-  const action = project ? updateProject.bind(null, project.id) : createProject
-  const [state, formAction] = useFormState(action, initialState)
   const [isPending, startTransition] = useTransition()
+  const [state, setState] = useState<FormState>({ message: "", errors: {} })
 
-  const handleSubmit = (formData: FormData) => {
-    startTransition(() => {
-      formAction(formData)
+  const handleSubmit = async (formData: FormData) => {
+    startTransition(async () => {
+      try {
+        const action = project ? updateProject.bind(null, project.id) : createProject
+        const result = await action(state, formData)
+        setState(result)
+      } catch (error) {
+        setState({
+          message: "Došlo k chybě při zpracování formuláře",
+          errors: {},
+        })
+      }
     })
   }
 
@@ -122,13 +129,10 @@ export function ProjectForm({ project }: { project?: Project }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Ukládám..." : project ? "Uložit změny" : "Vytvořit projekt"}
-        </Button>
-        {state?.message && !state.errors && <p className="text-green-600 text-sm">{state.message}</p>}
-        {state?.message && state.errors && <p className="text-red-500 text-sm">{state.message}</p>}
-      </div>
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Ukládám..." : project ? "Uložit změny" : "Vytvořit projekt"}
+      </Button>
+      {state.message && <p className="text-red-500 text-sm">{state.message}</p>}
     </form>
   )
 }
