@@ -12,30 +12,29 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, Save, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { createNewsArticle } from "@/lib/admin-actions"
-import RichTextEditor from "@/components/rich-text-editor" // Import the new editor
+import RichTextEditor from "@/components/rich-text-editor"
 
 const categories = ["Projekty", "Partnerství", "Tábory", "Granty", "Workshopy", "Organizace"]
 
 export default function NewArticlePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [contentHtml, setContentHtml] = useState<string>("") // State for rich text content
+  const [contentHtml, setContentHtml] = useState<string>("")
 
-  const handleSubmit = async (formData: FormData) => {
-    setLoading(true)
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)  // <-- OPRAVENO: používáme setLoading místo setSaving
     setError(null)
 
-    // The RichTextEditor component uses a hidden input with the 'name' prop
-    // so the contentHtml is automatically included in formData.
-    // No need to manually append it here.
-
     try {
+      const formData = new FormData(e.currentTarget)
       await createNewsArticle(formData)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Došlo k chybě při vytváření článku")
-      setLoading(false)
+    } finally {
+      setLoading(false)  // <-- OPRAVENO: používáme setLoading místo setSaving
     }
-  }
+  } // <-- PŘIDÁNO: uzavírací závorka funkce
 
   return (
     <div className="space-y-6">
@@ -53,7 +52,7 @@ export default function NewArticlePage() {
         </div>
       </div>
 
-      <form action={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
