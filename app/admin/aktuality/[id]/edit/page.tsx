@@ -35,24 +35,6 @@ interface NewsArticle {
   updated_at: string
 }
 
-// Interface pro raw data z Supabase
-interface SupabaseNewsArticle {
-  id: string
-  slug: string
-  title: string
-  perex: string
-  content: string
-  author: string
-  category: string
-  tags: string[] | null
-  image_url: string | null
-  featured: boolean | null
-  read_time: number | null
-  published_at: string | null
-  created_at: string
-  updated_at: string
-}
-
 export default function EditArticlePage({ params }: { params: { id: string } }) {
   const [article, setArticle] = useState<NewsArticle | null>(null)
   const [loading, setLoading] = useState(true)
@@ -66,36 +48,29 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
 
   const loadArticle = async () => {
     try {
-      const { data, error } = await supabase
-        .from("news_articles")
-        .select("*")
-        .eq("id", params.id)
-        .single()
+      const { data, error } = await supabase.from("news_articles").select("*").eq("id", params.id).single()
 
       if (error || !data) {
         notFound()
         return
       }
 
-      // Explicitly type the data as SupabaseNewsArticle
-      const rawData = data as SupabaseNewsArticle
-
       // Safely convert data to our interface with proper validation
       const articleData: NewsArticle = {
-        id: String(rawData.id || ""),
-        slug: String(rawData.slug || ""),
-        title: String(rawData.title || ""),
-        perex: String(rawData.perex || ""),
-        content: String(rawData.content || ""),
-        author: String(rawData.author || ""),
-        category: String(rawData.category || ""),
-        tags: Array.isArray(rawData.tags) ? rawData.tags : [],
-        image_url: rawData.image_url || null,
-        featured: Boolean(rawData.featured),
-        read_time: Number(rawData.read_time) || 5,
-        published_at: String(rawData.published_at || ""),
-        created_at: String(rawData.created_at || ""),
-        updated_at: String(rawData.updated_at || ""),
+        id: String(data.id || ""),
+        slug: String(data.slug || ""),
+        title: String(data.title || ""),
+        perex: String(data.perex || ""),
+        content: String(data.content || ""),
+        author: String(data.author || ""),
+        category: String(data.category || ""),
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        image_url: data.image_url || null,
+        featured: Boolean(data.featured),
+        read_time: Number(data.read_time) || 5,
+        published_at: String(data.published_at || ""),
+        created_at: String(data.created_at || ""),
+        updated_at: String(data.updated_at || ""),
       }
 
       setArticle(articleData)
@@ -123,7 +98,10 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="w-48 h-8 bg-gray-200 animate-pulse rounded"></div>
+        <div className="flex justify-between items-center">
+          <div className="w-48 h-8 bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-32 h-10 bg-gray-200 animate-pulse rounded"></div>
+        </div>
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="w-full h-96 bg-gray-200 animate-pulse rounded"></div>
