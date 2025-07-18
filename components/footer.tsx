@@ -148,8 +148,8 @@ export function Footer() {
               <div className="flex items-start space-x-3">
                 <MapPin className="w-4 h-4 text-[#c13aab] mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-gray-400">
-                  <div>Náměstí Míru 15</div>
-                  <div>120 00 Praha 2</div>
+                  <div>Újezd 450/40</div>
+                  <div>118 01 Praha 1</div>
                   <div>Česká republika</div>
                 </div>
               </div>
@@ -187,14 +187,17 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <div className="text-sm text-gray-400">&copy; 2024 Dělej co tě baví, z.s. Všechna práva vyhrazena.</div>
             <div className="flex items-center space-x-6 text-sm">
-              <Link href="/ochrana-udaju" className="text-gray-400 hover:text-[#c13aab] transition-colors">
+              <Link
+                href="/zasady-ochrany-osobnich-udaju"
+                className="text-gray-400 hover:text-[#c13aab] transition-colors"
+              >
                 Ochrana údajů
               </Link>
               <Link href="/obchodni-podminky" className="text-gray-400 hover:text-[#c13aab] transition-colors">
                 Obchodní podmínky
               </Link>
-              <Link href="/cookies" className="text-gray-400 hover:text-[#c13aab] transition-colors">
-                Cookies
+              <Link href="/sprava-cookies" className="text-gray-400 hover:text-[#c13aab] transition-colors">
+                Správa cookies
               </Link>
             </div>
           </div>
