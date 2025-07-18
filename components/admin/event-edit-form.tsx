@@ -9,18 +9,38 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useActionState } from "react"
 import { exportRegistrationsToCSV } from "@/lib/csv-export"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "sonner"
 
 interface EventEditFormProps {
   event: any
+}
+
+const initialState = {
+  message: null,
+  errors: null,
+  isSuccess: false,
 }
 
 export default function EventEditForm({ event }: EventEditFormProps) {
   const [registrations, setRegistrations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedRegistration, setExpandedRegistration] = useState<string | null>(null)
+
+  const updateEventWithId = updateEvent.bind(null, event.id)
+  const [state, formAction, isPending] = useActionState(updateEventWithId, initialState)
+
+  useEffect(() => {
+    if (state.message) {
+      if (state.isSuccess) {
+        toast.success(state.message)
+      } else {
+        toast.error(state.message)
+      }
+    }
+  }, [state])
 
   useEffect(() => {
     async function loadRegistrations() {
@@ -29,6 +49,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         setRegistrations(data)
       } catch (error) {
         console.error("Error loading registrations:", error)
+        toast.error("Nepodařilo se načíst registrace.")
       } finally {
         setLoading(false)
       }
@@ -55,7 +76,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
               <CardTitle>Upravit událost</CardTitle>
             </CardHeader>
             <CardContent>
-              <form action={updateEvent.bind(null, event.id)} className="space-y-6">
+              <form action={formAction} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="title">Název události *</Label>
@@ -189,7 +210,9 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button type="submit">Uložit změny</Button>
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? "Ukládám..." : "Uložit změny"}
+                  </Button>
                   <Button type="button" variant="outline" onClick={() => window.history.back()}>
                     Zrušit
                   </Button>

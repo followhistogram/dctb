@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useActionState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,32 +25,17 @@ type Project = {
   type: string
 }
 
-interface FormState {
-  message: string
-  errors: Record<string, string>
+const initialState = {
+  message: "",
+  errors: {},
 }
 
 export function ProjectForm({ project }: { project?: Project }) {
-  const [isPending, startTransition] = useTransition()
-  const [state, setState] = useState<FormState>({ message: "", errors: {} })
-
-  const handleSubmit = async (formData: FormData) => {
-    startTransition(async () => {
-      try {
-        const action = project ? updateProject.bind(null, project.id) : createProject
-        const result = await action(state, formData)
-        setState(result)
-      } catch (error) {
-        setState({
-          message: "Došlo k chybě při zpracování formuláře",
-          errors: {},
-        })
-      }
-    })
-  }
+  const action = project ? updateProject.bind(null, project.id) : createProject
+  const [state, formAction, isPending] = useActionState(action, initialState)
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="title">Název</Label>
@@ -129,10 +114,13 @@ export function ProjectForm({ project }: { project?: Project }) {
         </div>
       </div>
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Ukládám..." : project ? "Uložit změny" : "Vytvořit projekt"}
-      </Button>
-      {state.message && <p className="text-red-500 text-sm">{state.message}</p>}
+      <div className="flex items-center gap-4">
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Ukládám..." : project ? "Uložit změny" : "Vytvořit projekt"}
+        </Button>
+        {state?.message && !state.errors && <p className="text-green-600 text-sm">{state.message}</p>}
+        {state?.message && state.errors && <p className="text-red-500 text-sm">{state.message}</p>}
+      </div>
     </form>
   )
 }
