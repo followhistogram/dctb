@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,144 +10,183 @@ import { Loader2, Lock, Mail, Shield } from 'lucide-react'
 import { supabase } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
 
+interface RateLimitState {
+  isBlocked: boolean
+  attempts: number
+  blockUntil: number
+}
+
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [attempts, setAttempts] = useState(0)
-  const [blocked, setBlocked] = useState(false)
-  const [blockTime, setBlockTime] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [rateLimit, setRateLimit] = useState<RateLimitState>({
+    isBlocked: false,
+    attempts: 0,
+    blockUntil: 0
+  })
   const router = useRouter()
 
-  // Rate limiting
-  useEffect(() => {
-    const storedAttempts = localStorage.getItem('login_attempts')
-    const lastAttempt = localStorage.getItem('last_attempt')
+  // Rate limiting - maximálně 5 pokusů za 15 minut
+  const MAX_ATTEMPTS = 5
+  const BLOCK_DURATION = 15 * 60 * 1000 // 15 minut
 
-    if (storedAttempts && lastAttempt) {
-      const attemptCount = parseInt(storedAttempts)
-      const lastAttemptTime = parseInt(lastAttempt)
+  useEffect(() => {
+    // Načtení rate limit stavu z localStorage
+    const savedRateLimit = localStorage.getItem('adminLoginRateLimit')
+    if (savedRateLimit) {
+      const parsed = JSON.parse(savedRateLimit)
       const now = Date.now()
 
-      // Resetovat pokusy po 15 minutách
-      if (now - lastAttemptTime > 15 * 60 * 1000) {
-        localStorage.removeItem('login_attempts')
-        localStorage.removeItem('last_attempt')
-        setAttempts(0)
+      if (parsed.blockUntil > now) {
+        setRateLimit(parsed)
       } else {
-        setAttempts(attemptCount)
-
-        // Blokovat po 5 pokusech
-        if (attemptCount >= 5) {
-          setBlocked(true)
-          const remainingTime = Math.max(0, 15 * 60 * 1000 - (now - lastAttemptTime))
-          setBlockTime(remainingTime)
-
-          const timer = setInterval(() => {
-            setBlockTime(prev => {
-              if (prev <= 1000) {
-                setBlocked(false)
-                setAttempts(0)
-                localStorage.removeItem('login_attempts')
-                localStorage.removeItem('last_attempt')
-                clearInterval(timer)
-                return 0
-              }
-              return prev - 1000
-            })
-          }, 1000)
-
-          return () => clearInterval(timer)
-        }
+        // Vyčištění expirovaného bloku
+        localStorage.removeItem('adminLoginRateLimit')
+        setRateLimit({ isBlocked: false, attempts: 0, blockUntil: 0 })
       }
     }
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // Automatické odblokovanie po uplynutí času
+    if (rateLimit.isBlocked) {
+      const timeout = setTimeout(() => {
+        localStorage.removeItem('adminLoginRateLimit')
+        setRateLimit({ isBlocked: false, attempts: 0, blockUntil: 0 })
+        setError('')
+      }, rateLimit.blockUntil - Date.now())
+
+      return () => clearTimeout(timeout)
+    }
+  }, [rateLimit])
+
+  const handleRateLimitCheck = () => {
+    const now = Date.now()
+    const newAttempts = rateLimit.attempts + 1
+
+    if (newAttempts >= MAX_ATTEMPTS) {
+      const blockUntil = now + BLOCK_DURATION
+      const newRateLimit = { isBlocked: true, attempts: newAttempts, blockUntil }
+
+      setRateLimit(newRateLimit)
+      localStorage.setItem('adminLoginRateLimit', JSON.stringify(newRateLimit))
+
+      const remainingMinutes = Math.ceil(BLOCK_DURATION / 60000)
+      setError(`Příliš mnoho neúspěšných pokusů. Přístup blokován na ${remainingMinutes} minut.`)
+      return false
+    } else {
+      const newRateLimit = { ...rateLimit, attempts: newAttempts }
+      setRateLimit(newRateLimit)
+      localStorage.setItem('adminLoginRateLimit', JSON.stringify(newRateLimit))
+      return true
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (blocked) {
-      setError('Příliš mnoho pokusů o přihlášení. Zkuste to později.')
+    if (rateLimit.isBlocked) {
+      const remainingTime = Math.ceil((rateLimit.blockUntil - Date.now()) / 60000)
+      setError(`Přístup je stále blokován. Zbývá ${remainingTime} minut.`)
       return
     }
 
-    setLoading(true)
-    setError(null)
+    setIsLoading(true)
+    setError('')
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Validace vstupů
+      if (!email || !password) {
+        setError('Prosím vyplňte všechna pole.')
+        setIsLoading(false)
+        return
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('Neplatný formát emailu.')
+        setIsLoading(false)
+        return
+      }
+
+      // Pokus o přihlášení
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
       })
 
-      if (error) {
-        const newAttempts = attempts + 1
-        setAttempts(newAttempts)
-        localStorage.setItem('login_attempts', newAttempts.toString())
-        localStorage.setItem('last_attempt', Date.now().toString())
+      if (authError) {
+        console.error('Chyba přihlášení:', authError)
 
-        if (newAttempts >= 5) {
-          setBlocked(true)
-          setBlockTime(15 * 60 * 1000)
+        // Rate limiting jen při neúspěšném přihlášení
+        if (!handleRateLimitCheck()) {
+          setIsLoading(false)
+          return
         }
 
-        setError('Neplatné přihlašovací údaje')
+        // Konkrétní chybové hlášky
+        if (authError.message.includes('Invalid login credentials')) {
+          setError('Neplatné přihlašovací údaje.')
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError('Email nebyl potvrzen.')
+        } else {
+          setError('Chyba při přihlášení. Zkuste to prosím znovu.')
+        }
+
+        setIsLoading(false)
         return
       }
 
       if (data.user) {
-        // Vymazat pokusy při úspěšném přihlášení
-        localStorage.removeItem('login_attempts')
-        localStorage.removeItem('last_attempt')
+        // Kontrola admin role
+        const { data: profile, error: profileError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single()
 
-        // Redirect to admin dashboard
+        if (profileError || !profile || profile.role !== 'admin') {
+          await supabase.auth.signOut()
+          setError('Nemáte oprávnění pro přístup do admin rozhraní.')
+          setIsLoading(false)
+          return
+        }
+
+        // Úspěšné přihlášení - vyčistit rate limit
+        localStorage.removeItem('adminLoginRateLimit')
+        setRateLimit({ isBlocked: false, attempts: 0, blockUntil: 0 })
+
+        // Přesměrování na admin dashboard
         router.push('/admin')
       }
     } catch (err) {
-      setError('Došlo k chybě při přihlašování')
+      console.error('Neočekávaná chyba:', err)
+      setError('Došlo k neočekávané chybě. Zkuste to prosím znovu.')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 60000)
-    const seconds = Math.floor((ms % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  const getRemainingTime = () => {
+    if (!rateLimit.isBlocked) return 0
+    return Math.ceil((rateLimit.blockUntil - Date.now()) / 60000)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-cyan-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-[#c13aab] to-[#00acb9]">
-            <Shield className="h-6 w-6 text-white" />
+          <div className="flex justify-center mb-4">
+            <Shield className="h-12 w-12 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Administrace
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            Přihlaste se do administračního rozhraní
+          <CardTitle className="text-2xl font-bold">Admin Přihlášení</CardTitle>
+          <CardDescription>
+            Zadejte své přihlašovací údaje pro přístup do administrace
           </CardDescription>
         </CardHeader>
-
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {blocked && (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  Příliš mnoho pokusů o přihlášení. Zkuste to znovu za {formatTime(blockTime)}.
-                </AlertDescription>
-              </Alert>
-            )}
-
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -153,12 +194,12 @@ export default function AdminLoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@delejcotebavi.com"
+                  disabled={isLoading || rateLimit.isBlocked}
                   className="pl-10"
                   required
-                  disabled={blocked}
                 />
               </div>
             </div>
@@ -170,22 +211,36 @@ export default function AdminLoginPage() {
                 <Input
                   id="password"
                   type="password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  disabled={isLoading || rateLimit.isBlocked}
                   className="pl-10"
                   required
-                  disabled={blocked}
                 />
               </div>
             </div>
 
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {rateLimit.isBlocked && (
+              <Alert>
+                <AlertDescription>
+                  Přístup blokován na {getRemainingTime()} minut kvůli příliš mnoha neúspěšným pokusům.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || blocked}
+              disabled={isLoading || rateLimit.isBlocked}
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Přihlašuji...
@@ -196,9 +251,11 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-gray-600">
-            Zbývá pokusů: {Math.max(0, 5 - attempts)}
-          </div>
+          {rateLimit.attempts > 0 && !rateLimit.isBlocked && (
+            <div className="mt-4 text-sm text-gray-600 text-center">
+              Zbývá {MAX_ATTEMPTS - rateLimit.attempts} pokusů
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
