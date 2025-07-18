@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { useEffect, useState, useActionState } from "react"
+import { useEffect, useState, useTransition } from "react"
+import { useFormState } from "react-dom"
 import { exportRegistrationsToCSV } from "@/lib/csv-export"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
@@ -30,7 +31,8 @@ export default function EventEditForm({ event }: EventEditFormProps) {
   const [expandedRegistration, setExpandedRegistration] = useState<string | null>(null)
 
   const updateEventWithId = updateEvent.bind(null, event.id)
-  const [state, formAction, isPending] = useActionState(updateEventWithId, initialState)
+  const [state, formAction] = useFormState(updateEventWithId, initialState)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     if (state.message) {
@@ -62,6 +64,12 @@ export default function EventEditForm({ event }: EventEditFormProps) {
     exportRegistrationsToCSV(registrations, event.title)
   }
 
+  const handleSubmit = (formData: FormData) => {
+    startTransition(() => {
+      formAction(formData)
+    })
+  }
+
   return (
     <div className="container mx-auto py-8">
       <Tabs defaultValue="edit" className="w-full">
@@ -76,7 +84,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
               <CardTitle>Upravit událost</CardTitle>
             </CardHeader>
             <CardContent>
-              <form action={formAction} className="space-y-6">
+              <form action={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="title">Název události *</Label>

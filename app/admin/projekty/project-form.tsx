@@ -1,6 +1,7 @@
 "use client"
 
-import { useActionState } from "react"
+import { useFormState } from "react-dom"
+import { useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,10 +33,17 @@ const initialState = {
 
 export function ProjectForm({ project }: { project?: Project }) {
   const action = project ? updateProject.bind(null, project.id) : createProject
-  const [state, formAction, isPending] = useActionState(action, initialState)
+  const [state, formAction] = useFormState(action, initialState)
+  const [isPending, startTransition] = useTransition()
+
+  const handleSubmit = (formData: FormData) => {
+    startTransition(() => {
+      formAction(formData)
+    })
+  }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="title">Název</Label>
