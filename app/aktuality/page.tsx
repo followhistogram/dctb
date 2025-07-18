@@ -210,7 +210,7 @@ export default function NewsPage() {
                         ))}
                       </div>
                       <Link href={`/aktuality/${article.slug}`}>
-                        <Button className="bg-[#c13aab] hover:bg-[#c13aab]/90 text-white">
+                        <Button className="bg-gradient-to-r from-[#c13aab] to-[#c13aab]/90 hover:from-[#c13aab]/90 hover:to-[#c13aab]/80 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
                           Číst více
                           <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
@@ -291,7 +291,10 @@ export default function NewsPage() {
                           {article.author}
                         </span>
                         <Link href={`/aktuality/${article.slug}`}>
-                          <Button size="sm" className="bg-[#00acb9] hover:bg-[#00acb9]/90 text-white">
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-[#00acb9] to-[#00acb9]/90 hover:from-[#00acb9]/90 hover:to-[#00acb9]/80 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                          >
                             Číst více
                           </Button>
                         </Link>
@@ -317,7 +320,7 @@ export default function NewsPage() {
                     setSelectedCategory("Všechny")
                   }}
                   variant="outline"
-                  className="border-[#c13aab] text-[#c13aab] hover:bg-[#c13aab] hover:text-white bg-transparent"
+                  className="border-2 border-[#c13aab] text-[#c13aab] hover:bg-[#c13aab] hover:text-white bg-transparent font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                 >
                   Zobrazit všechny aktuality
                 </Button>
@@ -341,7 +344,9 @@ export default function NewsPage() {
                 placeholder="Váš email"
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/70 focus:border-white"
               />
-              <Button className="bg-white text-[#c13aab] hover:bg-white/90 whitespace-nowrap">Přihlásit se</Button>
+              <Button className="bg-white text-[#c13aab] hover:bg-white/90 whitespace-nowrap font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                Přihlásit se
+              </Button>
             </div>
           </div>
         </div>

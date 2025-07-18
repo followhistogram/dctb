@@ -85,7 +85,7 @@ export default async function EventsPage() {
                           {event.price === 0 ? "Zdarma" : `${event.price} Kč`}
                         </span>
                         <Link href={`/udalosti/${event.slug}`}>
-                          <Button className="bg-[#c13aab] hover:bg-[#c13aab]/90 text-white">
+                          <Button className="bg-gradient-to-r from-[#c13aab] to-[#c13aab]/90 hover:from-[#c13aab]/90 hover:to-[#c13aab]/80 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
                             Více informací
                             <ArrowRight className="w-4 h-4 ml-2" />
                           </Button>
@@ -161,7 +161,10 @@ export default async function EventsPage() {
                         {event.price === 0 ? "Zdarma" : `${event.price} Kč`}
                       </span>
                       <Link href={`/udalosti/${event.slug}`}>
-                        <Button size="sm" className="bg-[#c13aab] hover:bg-[#c13aab]/90 text-white">
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-[#c13aab] to-[#c13aab]/90 hover:from-[#c13aab]/90 hover:to-[#c13aab]/80 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                        >
                           Detail
                         </Button>
                       </Link>
@@ -180,7 +183,10 @@ export default async function EventsPage() {
             Kontaktujte nás a společně vytvoříme událost přesně podle vašich potřeb.
           </p>
           <Link href="/kontakt">
-            <Button size="lg" className="bg-white text-[#111] hover:bg-gray-100">
+            <Button
+              size="lg"
+              className="bg-white text-[#111] hover:bg-white/90 font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+            >
               Kontaktujte nás
             </Button>
           </Link>

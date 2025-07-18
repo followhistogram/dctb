@@ -137,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center">
             <Heart className="h-8 w-8 text-[#c13aab]" />
-            <span className="ml-2 text-xl font-bold text-gray-900">Admin</span>
+            <span className="ml-2 text-xl font-bold text-gray-900">Admin DCTB</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

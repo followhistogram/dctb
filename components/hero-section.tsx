@@ -48,16 +48,20 @@ export async function HeroSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-[#c13aab] hover:bg-[#c13aab]/90 text-white" asChild>
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-[#c13aab] to-[#c13aab]/90 hover:from-[#c13aab]/90 hover:to-[#c13aab]/80 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                asChild
+              >
                 <Link href={content.button1_link}>
                   {content.button1_text}
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                  <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="border-[#00acb9] text-[#00acb9] hover:bg-[#00acb9] hover:text-white bg-transparent"
+                className="border-2 border-[#00acb9] text-[#00acb9] hover:bg-[#00acb9] hover:text-white bg-white/80 backdrop-blur-sm font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                 asChild
               >
                 <Link href={content.button2_link}>{content.button2_text}</Link>
