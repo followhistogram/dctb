@@ -1,93 +1,30 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Clock, User, Search, Filter, ArrowRight, Tag } from "lucide-react"
+import { Calendar, Clock, User, ArrowRight, Tag } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase-client"
-import type { NewsArticle } from "@/lib/supabase"
+import { getFilteredNews, getNewsCategories } from "@/lib/news-data"
+import NewsFilters from "./news-filters"
 
-export default function NewsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("Všechny")
-  const [articles, setArticles] = useState<NewsArticle[]>([])
-  const [filteredNews, setFilteredNews] = useState<NewsArticle[]>([])
-  const [categories, setCategories] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadArticles()
-  }, [])
-
-  useEffect(() => {
-    filterNews()
-  }, [searchTerm, selectedCategory, articles])
-
-  const loadArticles = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("news_articles")
-        .select("*")
-        .order("published_at", { ascending: false })
-
-      if (error) throw error
-
-      setArticles(data || [])
-
-      // Extract unique categories
-      const uniqueCategories = ["Všechny", ...new Set(data?.map((article) => article.category) || [])]
-      setCategories(uniqueCategories)
-    } catch (error) {
-      console.error("Error loading articles:", error)
-    } finally {
-      setLoading(false)
-    }
+export default async function NewsPage({
+  searchParams,
+}: {
+  searchParams?: {
+    q?: string
+    category?: string
   }
+}) {
+  const query = searchParams?.q || ""
+  const category = searchParams?.category || "Všechny"
 
-  const filterNews = () => {
-    let filtered = articles
-
-    // Filter by category
-    if (selectedCategory !== "Všechny") {
-      filtered = filtered.filter((article) => article.category === selectedCategory)
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (article) =>
-          article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          article.perex.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          article.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase())),
-      )
-    }
-
-    setFilteredNews(filtered)
-  }
+  const articles = await getFilteredNews(query, category)
+  const categories = await getNewsCategories()
 
   const featuredNews = articles.filter((article) => article.featured)
-  const regularNews = filteredNews.filter((article) => !article.featured)
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <section className="py-20 bg-gradient-to-br from-[#c13aab]/10 to-[#00acb9]/10">
-          <div className="container mx-auto px-4">
-            <div className="text-center space-y-6">
-              <div className="w-24 h-8 bg-gray-200 rounded-full mx-auto animate-pulse"></div>
-              <div className="w-96 h-16 bg-gray-200 rounded-lg mx-auto animate-pulse"></div>
-              <div className="w-full max-w-3xl h-6 bg-gray-200 rounded mx-auto animate-pulse"></div>
-            </div>
-          </div>
-        </section>
-      </div>
-    )
-  }
+  const regularNews = articles.filter((article) => !article.featured)
 
   return (
     <div className="min-h-screen bg-white">
@@ -113,40 +50,14 @@ export default function NewsPage() {
       {/* Filters */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Hledat aktuality..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-80"
-                />
-              </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Kategorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="text-sm text-gray-600">
-              Nalezeno {filteredNews.length} {filteredNews.length === 1 ? "aktualita" : "aktualit"}
-            </div>
-          </div>
+          <Suspense fallback={<div>Načítání filtrů...</div>}>
+            <NewsFilters categories={categories} totalFound={articles.length} />
+          </Suspense>
         </div>
       </section>
 
       {/* Featured News */}
-      {featuredNews.length > 0 && selectedCategory === "Všechny" && !searchTerm && (
+      {featuredNews.length > 0 && category === "Všechny" && !query && (
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="mb-12">
@@ -229,14 +140,14 @@ export default function NewsPage() {
         <div className="container mx-auto px-4">
           <div className="mb-12">
             <h2 className="text-3xl font-bold text-[#111] mb-4">
-              {selectedCategory !== "Všechny" ? `Aktuality - ${selectedCategory}` : "Všechny aktuality"}
+              {category !== "Všechny" ? `Aktuality - ${category}` : "Všechny aktuality"}
             </h2>
             <p className="text-lg text-gray-600">Chronologický přehled všech našich zpráv</p>
           </div>
 
-          {filteredNews.length > 0 ? (
+          {articles.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredNews.map((article) => (
+              {articles.map((article) => (
                 <Card
                   key={article.id}
                   className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group h-full flex flex-col"
@@ -309,21 +220,19 @@ export default function NewsPage() {
               <div className="text-6xl mb-4">📰</div>
               <h3 className="text-2xl font-bold text-[#111] mb-2">Žádné aktuality nenalezeny</h3>
               <p className="text-gray-600 mb-4">
-                {searchTerm || selectedCategory !== "Všechny"
+                {query || category !== "Všechny"
                   ? "Zkuste změnit vyhledávací kritéria."
                   : "Momentálně nemáme žádné aktuality k zobrazení."}
               </p>
-              {(searchTerm || selectedCategory !== "Všechny") && (
-                <Button
-                  onClick={() => {
-                    setSearchTerm("")
-                    setSelectedCategory("Všechny")
-                  }}
-                  variant="outline"
-                  className="border-2 border-[#c13aab] text-[#c13aab] hover:bg-[#c13aab] hover:text-white bg-transparent font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-                >
-                  Zobrazit všechny aktuality
-                </Button>
+              {(query || category !== "Všechny") && (
+                <Link href="/aktuality">
+                  <Button
+                    variant="outline"
+                    className="border-2 border-[#c13aab] text-[#c13aab] hover:bg-[#c13aab] hover:text-white bg-transparent font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                  >
+                    Zobrazit všechny aktuality
+                  </Button>
+                </Link>
               )}
             </div>
           )}
