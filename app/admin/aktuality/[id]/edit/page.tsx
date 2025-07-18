@@ -86,18 +86,22 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleSubmit = async (formData: FormData) => {
-    setSaving(true)
-    setError(null)
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault()
+  setSaving(true)
+  setError(null)
 
-    try {
-      await updateNewsArticle(params.id, formData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Došlo k chybě při aktualizaci článku")
-    } finally {
-      setSaving(false)
-    }
+  try {
+    const formData = new FormData(e.currentTarget)
+    await updateNewsArticle(params.id, formData)
+    // Volitelně: zobrazit success message nebo redirect
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Došlo k chybě při aktualizaci článku")
+  } finally {
+    setSaving(false)
   }
+}
+
 
   if (loading) {
     return (
@@ -153,7 +157,7 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
         </Link>
       </div>
 
-      <form action={handleSubmit} className="space-y-6">
+<form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
