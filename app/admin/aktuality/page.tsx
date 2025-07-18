@@ -29,6 +29,18 @@ interface NewsArticle {
   updated_at: string
 }
 
+// NOVĚ PŘIDÁNO: Type guard funkce pro bezpečné typování
+function isNewsArticleArray(obj: any): obj is NewsArticle[] {
+  return Array.isArray(obj) && obj.every(item => 
+    item && 
+    typeof item.id === "string" &&
+    typeof item.title === "string" &&
+    typeof item.slug === "string" &&
+    typeof item.content === "string" &&
+    Array.isArray(item.tags)
+  )
+}
+
 export default function AdminNewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([])
   const [filteredArticles, setFilteredArticles] = useState<NewsArticle[]>([])
@@ -47,7 +59,6 @@ export default function AdminNewsPage() {
 
   const loadArticles = async () => {
     try {
-      // Simple query without any joins to admin_users
       const { data, error } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false })
 
       if (error) {
@@ -55,13 +66,21 @@ export default function AdminNewsPage() {
         throw error
       }
 
-      setArticles(data || [])
-
-      // Extract unique categories
-      const uniqueCategories = ["Všechny", ...new Set(data?.map((article) => article.category) || [])]
-      setCategories(uniqueCategories)
+      // OPRAVENO: Používáme type guard místo nebezpečného type assertion
+      if (isNewsArticleArray(data)) {
+        setArticles(data)
+        // Extract unique categories
+        const uniqueCategories = ["Všechny", ...new Set(data.map((article) => article.category))]
+        setCategories(uniqueCategories)
+      } else {
+        console.error("Data nejsou ve správném formátu:", data)
+        setArticles([])
+        setCategories(["Všechny"])
+      }
     } catch (error) {
       console.error("Error loading articles:", error)
+      setArticles([])
+      setCategories(["Všechny"])
     } finally {
       setLoading(false)
     }
