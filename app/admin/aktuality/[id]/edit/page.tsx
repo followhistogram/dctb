@@ -55,24 +55,8 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
         return
       }
 
-      // Safely convert data to our interface with proper validation
-      const articleData: NewsArticle = {
-        id: String(data.id || ""),
-        slug: String(data.slug || ""),
-        title: String(data.title || ""),
-        perex: String(data.perex || ""),
-        content: String(data.content || ""),
-        author: String(data.author || ""),
-        category: String(data.category || ""),
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        image_url: data.image_url || null,
-        featured: Boolean(data.featured),
-        read_time: Number(data.read_time) || 5,
-        published_at: String(data.published_at || ""),
-        created_at: String(data.created_at || ""),
-        updated_at: String(data.updated_at || ""),
-      }
-
+      // Type assertion to ensure data matches our interface
+      const articleData = data as NewsArticle
       setArticle(articleData)
       setContentHtml(articleData.content)
     } catch (error) {
@@ -98,10 +82,7 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="w-48 h-8 bg-gray-200 animate-pulse rounded"></div>
-          <div className="w-32 h-10 bg-gray-200 animate-pulse rounded"></div>
-        </div>
+        <div className="w-48 h-8 bg-gray-200 animate-pulse rounded"></div>
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="w-full h-96 bg-gray-200 animate-pulse rounded"></div>

@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase-server"
+import { supabaseAdmin } from "@/lib/supabase-server"
 
 export interface NewsArticle {
   id: string
@@ -6,68 +6,61 @@ export interface NewsArticle {
   title: string
   perex: string
   content: string
+  publishedAt: string
   author: string
   category: string
   tags: string[]
-  image_url: string | null
+  image: string
   featured: boolean
-  read_time: number
-  published_at: string
-  created_at: string
-  updated_at: string
+  readTime: number
 }
 
-export async function getAllNewsArticles(): Promise<NewsArticle[]> {
-  const supabase = createServerClient()
-
-  const { data, error } = await supabase.from("news_articles").select("*").order("published_at", { ascending: false })
+export async function getAllNews() {
+  const { data: news, error } = await supabaseAdmin
+    .from("news_articles")
+    .select("*")
+    .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching news articles:", error)
+    console.error("Error fetching news:", error)
     return []
   }
 
-  return data || []
+  return news || []
 }
 
-export async function getNewsArticleBySlug(slug: string): Promise<NewsArticle | null> {
-  const supabase = createServerClient()
+export async function getNewsArticleBySlug(slug: string) {
+  const { data: news, error } = await supabaseAdmin.from("news_articles").select("*").eq("slug", slug).single()
 
-  const { data, error } = await supabase.from("news_articles").select("*").eq("slug", slug).single()
-
-  if (error) {
-    console.error("Error fetching news article:", error)
+  if (error || !news) {
     return null
   }
 
-  return data
+  return news
 }
 
-export async function getFeaturedNewsArticles(): Promise<NewsArticle[]> {
-  const supabase = createServerClient()
-
-  const { data, error } = await supabase
+export async function getRelatedNewsArticles(articleId: string, category: string, limit = 3) {
+  const { data: news, error } = await supabaseAdmin
     .from("news_articles")
-    .select("*")
-    .eq("featured", true)
-    .order("published_at", { ascending: false })
-    .limit(3)
+    .select("id, title, slug, image_url, perex")
+    .eq("category", category)
+    .neq("id", articleId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
 
   if (error) {
-    console.error("Error fetching featured news articles:", error)
+    console.error("Error fetching related news:", error)
     return []
   }
 
-  return data || []
+  return news || []
 }
 
-export async function getLatestNews(limit = 6): Promise<NewsArticle[]> {
-  const supabase = createServerClient()
-
-  const { data, error } = await supabase
+export async function getLatestNews(limit = 3) {
+  const { data: news, error } = await supabaseAdmin
     .from("news_articles")
-    .select("*")
-    .order("published_at", { ascending: false })
+    .select("id, title, slug, image_url, created_at, perex")
+    .order("created_at", { ascending: false })
     .limit(limit)
 
   if (error) {
@@ -75,53 +68,7 @@ export async function getLatestNews(limit = 6): Promise<NewsArticle[]> {
     return []
   }
 
-  return data || []
+  return news || []
 }
 
-export async function getNewsArticlesByCategory(category: string): Promise<NewsArticle[]> {
-  const supabase = createServerClient()
-
-  const { data, error } = await supabase
-    .from("news_articles")
-    .select("*")
-    .eq("category", category)
-    .order("published_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching news articles by category:", error)
-    return []
-  }
-
-  return data || []
-}
-
-export async function searchNewsArticles(query: string): Promise<NewsArticle[]> {
-  const supabase = createServerClient()
-
-  const { data, error } = await supabase
-    .from("news_articles")
-    .select("*")
-    .or(`title.ilike.%${query}%,perex.ilike.%${query}%,content.ilike.%${query}%`)
-    .order("published_at", { ascending: false })
-
-  if (error) {
-    console.error("Error searching news articles:", error)
-    return []
-  }
-
-  return data || []
-}
-
-export async function getNewsCategories(): Promise<string[]> {
-  const supabase = createServerClient()
-
-  const { data, error } = await supabase.from("news_articles").select("category").order("category")
-
-  if (error) {
-    console.error("Error fetching news categories:", error)
-    return []
-  }
-
-  const categories = [...new Set(data?.map((item) => item.category) || [])]
-  return categories
-}
+export const newsCategories = ["Všechny", "Projekty", "Partnerství", "Tábory", "Granty", "Workshopy", "Organizace"]

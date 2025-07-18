@@ -41,7 +41,7 @@ export function CampRegistrationForm({ event }: CampRegistrationFormProps) {
         setMessage({ type: "error", text: result.message })
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Do��lo k neočekávané chybě. Zkuste to prosím znovu." })
+      setMessage({ type: "error", text: "Došlo k neočekávané chybě. Zkuste to prosím znovu." })
     } finally {
       setIsSubmitting(false)
     }

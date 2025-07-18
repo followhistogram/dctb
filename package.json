@@ -53,7 +53,7 @@
     "date-fns": "latest",
     "embla-carousel-react": "latest",
     "input-otp": "latest",
-    "isomorphic-dompurify": "^2.15.0",
+    "isomorphic-dompurify": "latest",
     "js-cookie": "latest",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",
