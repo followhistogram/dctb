@@ -55,8 +55,24 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
         return
       }
 
-      // Type assertion to ensure data matches our interface
-      const articleData = data as NewsArticle
+      // Safely convert data to our interface with proper validation
+      const articleData: NewsArticle = {
+        id: data.id || "",
+        slug: data.slug || "",
+        title: data.title || "",
+        perex: data.perex || "",
+        content: data.content || "",
+        author: data.author || "",
+        category: data.category || "",
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        image_url: data.image_url || null,
+        featured: Boolean(data.featured),
+        read_time: Number(data.read_time) || 5,
+        published_at: data.published_at || "",
+        created_at: data.created_at || "",
+        updated_at: data.updated_at || "",
+      }
+
       setArticle(articleData)
       setContentHtml(articleData.content)
     } catch (error) {
