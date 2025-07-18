@@ -29,7 +29,6 @@ interface NewsArticle {
   updated_at: string
 }
 
-// NOVĚ PŘIDÁNO: Type guard funkce pro bezpečné typování
 function isNewsArticleArray(obj: any): obj is NewsArticle[] {
   return Array.isArray(obj) && obj.every(item => 
     item && 
@@ -66,11 +65,10 @@ export default function AdminNewsPage() {
         throw error
       }
 
-      // OPRAVENO: Používáme type guard místo nebezpečného type assertion
       if (isNewsArticleArray(data)) {
         setArticles(data)
-        // Extract unique categories
-        const uniqueCategories = ["Všechny", ...new Set(data.map((article) => article.category))]
+        // OPRAVENO: Explicitně typujeme kategorii jako string
+        const uniqueCategories: string[] = ["Všechny", ...new Set(data.map((article: NewsArticle) => article.category))]
         setCategories(uniqueCategories)
       } else {
         console.error("Data nejsou ve správném formátu:", data)
