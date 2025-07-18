@@ -14,7 +14,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { supabase } from "@/lib/supabase-client"
 import { updateNewsArticle } from "@/lib/admin-actions"
-import RichTextEditor from "@/components/rich-text-editor" // Import the new editor
+import RichTextEditor from "@/components/rich-text-editor"
 
 const categories = ["Projekty", "Partnerství", "Tábory", "Granty", "Workshopy", "Organizace"]
 
@@ -40,7 +40,7 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [contentHtml, setContentHtml] = useState<string>("") // State for rich text content
+  const [contentHtml, setContentHtml] = useState<string>("")
 
   useEffect(() => {
     loadArticle()
@@ -55,8 +55,10 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
         return
       }
 
-      setArticle(data)
-      setContentHtml(data.content) // Initialize rich text editor with existing content
+      // Type assertion to ensure data matches our interface
+      const articleData = data as NewsArticle
+      setArticle(articleData)
+      setContentHtml(articleData.content)
     } catch (error) {
       console.error("Error loading article:", error)
       notFound()
@@ -68,10 +70,6 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
   const handleSubmit = async (formData: FormData) => {
     setSaving(true)
     setError(null)
-
-    // The RichTextEditor component uses a hidden input with the 'name' prop
-    // so the contentHtml is automatically included in formData.
-    // No need to manually append it here.
 
     try {
       await updateNewsArticle(params.id, formData)

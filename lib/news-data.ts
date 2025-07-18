@@ -1,8 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-server"
-import { notFound } from "next/navigation"
 
-// The interface and static data can be removed if we are only fetching from DB
-// but I will leave it for now in case it's used elsewhere.
 export interface NewsArticle {
   id: string
   slug: string
@@ -29,17 +26,34 @@ export async function getAllNews() {
     return []
   }
 
-  return news
+  return news || []
 }
 
-export async function getNewsBySlug(slug: string) {
+export async function getNewsArticleBySlug(slug: string) {
   const { data: news, error } = await supabaseAdmin.from("news_articles").select("*").eq("slug", slug).single()
 
   if (error || !news) {
-    notFound()
+    return null
   }
 
   return news
+}
+
+export async function getRelatedNewsArticles(articleId: string, category: string, limit = 3) {
+  const { data: news, error } = await supabaseAdmin
+    .from("news_articles")
+    .select("id, title, slug, image_url, perex")
+    .eq("category", category)
+    .neq("id", articleId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("Error fetching related news:", error)
+    return []
+  }
+
+  return news || []
 }
 
 export async function getLatestNews(limit = 3) {
@@ -54,7 +68,7 @@ export async function getLatestNews(limit = 3) {
     return []
   }
 
-  return news
+  return news || []
 }
 
 export const newsCategories = ["Všechny", "Projekty", "Partnerství", "Tábory", "Granty", "Workshopy", "Organizace"]
